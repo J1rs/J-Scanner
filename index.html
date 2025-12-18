@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>J-Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background: #0b0f1a;
+      color: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .box {
+      background: #12182b;
+      padding: 30px;
+      border-radius: 16px;
+      width: 380px;
+      box-shadow: 0 0 30px rgba(0,0,0,.6);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      margin-bottom: 15px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #4f7cff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #3b66e0;
+    }
+    .result {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .score {
+      font-size: 28px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h1>J-Scanner</h1>
+  <input id="url" placeholder="https://example.com" />
+  <button onclick="scan()">SCAN</button>
+
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+const API = "https://empty-waterfall-3803.selambenjiji.workers.dev";
+
+async function scan() {
+  const url = document.getElementById("url").value;
+  const result = document.getElementById("result");
+
+  result.innerHTML = "Scanning...";
+
+  const res = await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url })
+  });
+
+  const data = await res.json();
+
+  const bad = data.malicious + data.suspicious;
+  const total = bad + data.harmless + data.undetected;
+
+  result.innerHTML = `
+    <div class="score">${bad} / ${total}</div>
+    <div>${bad === 0 ? "✅ Clean" : "⚠️ Risky URL"}</div>
+  `;
+}
+</script>
+
+</body>
+</html>
+
