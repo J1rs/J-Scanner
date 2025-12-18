@@ -1,162 +1,464 @@
-<!-- J-Scanner v2 Ultra UI -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>J-Scanner</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: Inter, sans-serif;
-      background: radial-gradient(circle at top, #050510, #000);
-      color: #eaeaff;
-      overflow: hidden;
-    }
-    canvas { position: fixed; inset: 0; z-index: 0; }
+    <meta charset="UTF-8">
+    <title>J-SCANNER | COMMAND CENTER</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Teko:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #020408;
+            --primary: #00f2ff; /* Cyber Cyan */
+            --secondary: #ff0055; /* Alert Red */
+            --glass: rgba(10, 20, 30, 0.7);
+            --border: rgba(0, 242, 255, 0.15);
+            --font-main: 'Rajdhani', sans-serif;
+            --font-head: 'Teko', sans-serif;
+        }
 
-    .container {
-      position: relative;
-      z-index: 2;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+        body {
+            margin: 0;
+            background: var(--bg-color);
+            color: #fff;
+            font-family: var(--font-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    .card {
-      width: 420px;
-      padding: 30px;
-      background: rgba(15, 15, 40, 0.65);
-      backdrop-filter: blur(18px);
-      border-radius: 22px;
-      box-shadow: 0 0 60px rgba(0,255,255,.25);
-      text-align: center;
-    }
+        /* --- ARKA PLAN (3D KÜRE) --- */
+        #globeCanvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            opacity: 0.4;
+        }
 
-    h1 {
-      font-family: Orbitron, sans-serif;
-      font-size: 28px;
-      margin-bottom: 10px;
-      color: #7df9ff;
-      letter-spacing: 2px;
-    }
+        /* --- GRID KAPLAMASI --- */
+        .grid-overlay {
+            position: absolute;
+            width: 100%; height: 100%;
+            background: 
+                linear-gradient(rgba(0, 242, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 1;
+            pointer-events: none;
+        }
 
-    p { opacity: .8; margin-bottom: 20px; }
+        /* --- ANA PANEL --- */
+        .main-panel {
+            position: relative;
+            z-index: 10;
+            width: 600px;
+            background: var(--glass);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--border);
+            padding: 40px;
+            clip-path: polygon(
+                20px 0, 100% 0, 100% calc(100% - 20px), 
+                calc(100% - 20px) 100%, 0 100%, 0 20px
+            );
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
 
-    input {
-      width: 100%;
-      padding: 14px;
-      border-radius: 12px;
-      border: none;
-      outline: none;
-      background: #0b0b25;
-      color: #fff;
-      font-size: 15px;
-    }
+        /* Panel Köşe Süsleri */
+        .main-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
 
-    button {
-      margin-top: 16px;
-      width: 100%;
-      padding: 14px;
-      border-radius: 14px;
-      border: none;
-      background: linear-gradient(135deg, #00ffe7, #0077ff);
-      color: #000;
-      font-weight: 600;
-      cursor: pointer;
-      transition: .3s;
-    }
+        h1 {
+            font-family: var(--font-head);
+            font-size: 72px;
+            margin: 0;
+            line-height: 0.8;
+            text-align: center;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(to bottom, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+        }
 
-    button:hover { transform: scale(1.05); }
+        .input-box {
+            position: relative;
+            margin-top: 40px;
+        }
 
-    .result {
-      margin-top: 20px;
-      font-family: Orbitron;
-      font-size: 18px;
-    }
+        input {
+            width: 100%;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            color: var(--primary);
+            font-family: var(--font-main);
+            font-size: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+            outline: none;
+            text-align: center;
+            transition: 0.3s;
+            letter-spacing: 1px;
+        }
 
-    .bar {
-      margin-top: 12px;
-      height: 12px;
-      border-radius: 10px;
-      background: #111;
-      overflow: hidden;
-    }
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
 
-    .bar span {
-      display: block;
-      height: 100%;
-      width: 0;
-      background: linear-gradient(90deg, #00ff99, #ff004c);
-      transition: width 1s ease;
-    }
-  </style>
+        button {
+            width: 100%;
+            margin-top: 15px;
+            padding: 18px;
+            background: rgba(0, 242, 255, 0.1);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            font-family: var(--font-head);
+            font-size: 24px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            background: var(--primary);
+            color: #000;
+            box-shadow: 0 0 30px var(--primary);
+        }
+        
+        button::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: linear-gradient(transparent, rgba(255,255,255,0.2), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        /* --- SONUÇ KARTI --- */
+        #result-display {
+            display: none;
+            margin-top: 30px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 20px;
+            text-align: center;
+        }
+
+        .status-big {
+            font-size: 40px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .engine-count {
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* --- HUD SİSTEMLERİ (SAĞ/SOL SÜSLEMELER) --- */
+        .hud-left, .hud-right {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 200px;
+            z-index: 5;
+            display: none; /* Mobilde gizle */
+        }
+        
+        .hud-left { left: 40px; text-align: right; border-right: 2px solid rgba(0, 242, 255, 0.3); padding-right: 20px; }
+        .hud-right { right: 40px; text-align: left; border-left: 2px solid rgba(0, 242, 255, 0.3); padding-left: 20px; }
+        
+        @media(min-width: 1200px) {
+            .hud-left, .hud-right { display: block; }
+        }
+
+        .stat-row {
+            margin-bottom: 15px;
+        }
+        .stat-label { font-size: 10px; color: #666; letter-spacing: 1px; }
+        .stat-bar {
+            width: 100%; height: 4px; background: #111; margin-top: 4px; position: relative;
+        }
+        .stat-fill {
+            height: 100%; background: var(--primary); width: 0%;
+            animation: fluctuate 2s infinite;
+        }
+
+        /* --- RADAR (SOL ALT) --- */
+        .radar-box {
+            position: absolute;
+            bottom: 40px; left: 40px;
+            width: 100px; height: 100px;
+            border: 1px solid rgba(0,242,255,0.3);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,242,255,0.1), transparent);
+            z-index: 5;
+            display: none;
+        }
+        @media(min-width: 800px) { .radar-box { display: block; } }
+
+        .radar-line {
+            width: 50%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary));
+            position: absolute;
+            top: 50%; left: 50%;
+            transform-origin: 0 0;
+            animation: radarSpin 4s linear infinite;
+        }
+
+        /* --- ANİMASYONLAR --- */
+        @keyframes shine { 0% { left: -100%; top: -100%; } 100% { left: 100%; top: 100%; } }
+        @keyframes fluctuate { 0% { width: 30%; } 50% { width: 80%; } 100% { width: 40%; } }
+        @keyframes radarSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    </style>
 </head>
 <body>
 
-<canvas id="bg"></canvas>
+    <canvas id="globeCanvas"></canvas>
+    <div class="grid-overlay"></div>
 
-<div class="container">
-  <div class="card">
-    <h1>J-Scanner</h1>
-    <p>Advanced URL Threat Intelligence</p>
-    <input id="url" placeholder="https://example.com" />
-    <button onclick="scan()">SCAN</button>
-    <div class="result" id="res"></div>
-    <div class="bar"><span id="bar"></span></div>
-  </div>
-</div>
+    <div class="hud-left">
+        <div class="stat-row">
+            <div class="stat-label">CPU LOAD</div>
+            <div class="stat-bar"><div class="stat-fill" style="animation-delay: 0s;"></div></div>
+        </div>
+        <div class="stat-row">
+            <div class="stat-label">MEMORY ALLOC</div>
+            <div class="stat-bar"><div class="stat-fill" style="animation-delay: 0.5s;"></div></div>
+        </div>
+        <div class="stat-row">
+            <div class="stat-label">NET UPLINK</div>
+            <div class="stat-bar"><div class="stat-fill" style="animation-delay: 1s;"></div></div>
+        </div>
+        <div style="font-size: 32px; font-family: 'Teko'; color: var(--primary);">SYS: ONLINE</div>
+    </div>
+
+    <div class="hud-right">
+        <div class="stat-row">
+            <div class="stat-label">GLOBAL THREAT</div>
+            <div class="stat-bar"><div class="stat-fill" style="background: var(--secondary); width: 20%;"></div></div>
+        </div>
+        <div style="font-size: 12px; color: #aaa; margin-top: 20px;">
+            SECURE CONNECTION<br>
+            ENCRYPTION: AES-256<br>
+            NODE: TR-ISTANBUL-04
+        </div>
+    </div>
+
+    <div class="radar-box">
+        <div class="radar-line"></div>
+    </div>
+
+    <div class="main-panel">
+        <h1>J-SCANNER</h1>
+        
+        <div class="input-box">
+            <input type="text" id="url" placeholder="ENTER TARGET URL" autocomplete="off">
+        </div>
+
+        <button onclick="scan()" id="btnScan">INITIATE SCAN</button>
+
+        <div id="result-display">
+            <div class="status-big" id="status-text">ANALYZING</div>
+            <div class="engine-count" id="engine-text">Waiting for data stream...</div>
+        </div>
+    </div>
 
 <script>
-// Connected network / neuron style background
-const canvas = document.getElementById('bg');
-const ctx = canvas.getContext('2d');
-let w, h;
-function resize(){ w = canvas.width = innerWidth; h = canvas.height = innerHeight; }
-window.onresize = resize; resize();
+    /* --- SES SİSTEMİ (SFX) --- */
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
 
-const nodes = Array.from({length: 80}, () => ({
-  x: Math.random()*w,
-  y: Math.random()*h,
-  vx: (Math.random()-.5)*0.6,
-  vy: (Math.random()-.5)*0.6
-}));
+        const now = audioCtx.currentTime;
 
-function draw(){
-  ctx.clearRect(0,0,w,h);
-  for(let i=0;i<nodes.length;i++){
-    const a = nodes[i];
-    a.x+=a.vx; a.y+=a.vy;
-    if(a.x<0||a.x>w) a.vx*=-1;
-    if(a.y<0||a.y>h) a.vy*=-1;
-    for(let j=i+1;j<nodes.length;j++){
-      const b = nodes[j];
-      const d = Math.hypot(a.x-b.x,a.y-b.y);
-      if(d<120){
-        ctx.strokeStyle = `rgba(0,255,255,${1-d/120})`;
-        ctx.lineWidth = .6;
-        ctx.beginPath();
-        ctx.moveTo(a.x,a.y);
-        ctx.lineTo(b.x,b.y);
-        ctx.stroke();
-      }
+        if (type === 'start') {
+            // Başlangıç sesi (Uzun tarama sesi)
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.linearRampToValueAtTime(800, now + 0.5);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.5);
+            osc.start();
+            osc.stop(now + 0.5);
+        } else if (type === 'success') {
+            // Başarılı (Clean)
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0, now + 0.6);
+            osc.start();
+            osc.stop(now + 0.6);
+        } else if (type === 'danger') {
+            // Tehlike (Alarm)
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(100, now);
+            osc.frequency.linearRampToValueAtTime(80, now + 0.3);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.3);
+            osc.start();
+            osc.stop(now + 0.3);
+        }
     }
-    ctx.fillStyle = '#7df9ff';
-    ctx.fillRect(a.x,a.y,2,2);
-  }
-  requestAnimationFrame(draw);
-}
-draw();
 
-function scan(){
-  const score = Math.floor(Math.random()*100);
-  document.getElementById('res').innerText = `Risk Score: ${score}%`;
-  document.getElementById('bar').style.width = score + '%';
-}
+    /* --- 3D KÜRE ANİMASYONU --- */
+    const canvas = document.getElementById('globeCanvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    
+    const dots = [];
+    const DOT_COUNT = 450;
+    
+    // Küre Noktalarını Oluştur
+    for(let i=0; i<DOT_COUNT; i++){
+        const theta = Math.random() * 2 * Math.PI; // Yatay açı
+        const phi = Math.acos((Math.random() * 2) - 1); // Dikey açı
+        const r = 400; // Yarıçap
+        
+        dots.push({
+            x: r * Math.sin(phi) * Math.cos(theta),
+            y: r * Math.sin(phi) * Math.sin(theta),
+            z: r * Math.cos(phi)
+        });
+    }
+
+    let rotation = 0;
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function drawGlobe() {
+        ctx.clearRect(0,0,width,height);
+        
+        const cx = width / 2;
+        const cy = height / 2;
+        
+        rotation += 0.002;
+
+        ctx.fillStyle = '#00f2ff';
+
+        dots.forEach(dot => {
+            // Y Ekseni Etrafında Dönüş Matematiği
+            let x = dot.x * Math.cos(rotation) - dot.z * Math.sin(rotation);
+            let z = dot.z * Math.cos(rotation) + dot.x * Math.sin(rotation);
+            let y = dot.y;
+
+            // 3D -> 2D Perspektif İzdüşümü
+            let scale = 600 / (600 + z);
+            let x2d = (x * scale) + cx;
+            let y2d = (y * scale) + cy;
+            let alpha = (z + 400) / 800; // Arkadakiler sönük
+
+            if(scale > 0) {
+                ctx.globalAlpha = alpha * 0.5;
+                ctx.beginPath();
+                ctx.arc(x2d, y2d, scale * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        requestAnimationFrame(drawGlobe);
+    }
+    drawGlobe();
+
+    /* --- TARAMA VE API FONKSİYONLARI --- */
+    const API = "https://empty-waterfall-3803.selambenjiji.workers.dev";
+
+    async function scan() {
+        const urlInput = document.getElementById("url");
+        const btn = document.getElementById("btnScan");
+        const resultDiv = document.getElementById("result-display");
+        const statusText = document.getElementById("status-text");
+        const engineText = document.getElementById("engine-text");
+
+        if(!urlInput.value) {
+            urlInput.focus();
+            urlInput.style.borderColor = "#ff0055";
+            setTimeout(()=> urlInput.style.borderColor = "#333", 1000);
+            return;
+        }
+
+        playSound('start');
+        
+        // UI Durumu: Yükleniyor
+        btn.disabled = true;
+        btn.innerHTML = "ESTABLISHING UPLINK...";
+        resultDiv.style.display = "block";
+        statusText.innerText = "SCANNING...";
+        statusText.style.color = "#fff";
+        engineText.innerText = "Querying global databases...";
+
+        try {
+            const res = await fetch(API, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: urlInput.value })
+            });
+
+            const data = await res.json();
+            const bad = data.malicious + data.suspicious;
+            const total = bad + data.harmless + data.undetected;
+
+            btn.innerHTML = "SCAN COMPLETE";
+            
+            if(bad === 0) {
+                // Temiz
+                statusText.innerText = "TARGET CLEAN";
+                statusText.style.color = "#00f2ff"; // Cyan
+                statusText.style.textShadow = "0 0 20px #00f2ff";
+                engineText.innerText = `Confirmed Safe by ${total} Security Engines`;
+                playSound('success');
+            } else {
+                // Tehlikeli
+                statusText.innerText = "THREAT DETECTED";
+                statusText.style.color = "#ff0055"; // Red
+                statusText.style.textShadow = "0 0 20px #ff0055";
+                engineText.innerText = `CRITICAL ALERT: ${bad} / ${total} Engines Flagged this URL`;
+                playSound('danger');
+            }
+
+        } catch (error) {
+            statusText.innerText = "CONNECTION FAILURE";
+            statusText.style.color = "orange";
+            engineText.innerText = "Unable to reach API node.";
+        }
+
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = "INITIATE SCAN";
+        }, 2000);
+    }
+
+    // Enter tuşu desteği
+    document.getElementById("url").addEventListener("keypress", function(e) {
+        if(e.key === "Enter") scan();
+    });
+
 </script>
-
 </body>
 </html>
-
