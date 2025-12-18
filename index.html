@@ -1,506 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>J-SCANNER | INTELLIGENCE</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #030508;
-            --panel: rgba(12, 18, 28, 0.75);
-            --primary: #3b82f6; /* Modern Mavi */
-            --accent: #ef4444;  /* Uyarı Kırmızısı */
-            --text-main: #e2e8f0;
-            --text-muted: #64748b;
-            --border: rgba(255, 255, 255, 0.08);
-            --glow: 0 0 20px rgba(59, 130, 246, 0.15);
-        }
-
-        body {
-            margin: 0;
-            background: var(--bg);
-            color: var(--text-main);
-            font-family: 'JetBrains Mono', monospace;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* --- ARKA PLAN (CANVAS) --- */
-        #networkCanvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0;
-            opacity: 0.4;
-        }
-
-        /* --- VIGNETTE & GRID --- */
-        .overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, transparent 0%, #000 120%);
-            z-index: 1;
-            pointer-events: none;
-        }
-        
-        .grid-lines {
-            position: absolute;
-            width: 100%; height: 100%;
-            background: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 50px 50px;
-            z-index: 0;
-            opacity: 0.5;
-        }
-
-        /* --- ANA PANEL --- */
-        .interface {
-            position: relative;
-            z-index: 10;
-            width: 900px;
-            max-width: 95%;
-            height: 550px;
-            display: flex;
-            background: var(--panel);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-        }
-
-        /* SOL TARA (KONTROL) */
-        .left-panel {
-            flex: 1.2;
-            padding: 50px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            border-right: 1px solid var(--border);
-            position: relative;
-        }
-
-        /* SAĞ TARA (VERİ AKIŞI) */
-        .right-panel {
-            flex: 0.8;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 30px;
-            font-size: 11px;
-            color: var(--text-muted);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        /* --- TİPOGRAFİ --- */
-        h1 {
-            font-family: 'Oswald', sans-serif;
-            font-size: 64px;
-            margin: 0;
-            line-height: 1;
-            letter-spacing: -2px;
-            background: linear-gradient(to bottom, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-transform: uppercase;
-        }
-
-        .sys-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 12px;
-            color: var(--primary);
-            margin-bottom: 40px;
-            letter-spacing: 2px;
-        }
-        
-        .blink-dot {
-            width: 8px; height: 8px;
-            background: var(--primary);
-            border-radius: 50%;
-            box-shadow: 0 0 10px var(--primary);
-            animation: blink 2s infinite;
-        }
-
-        /* --- INPUT ALANI --- */
-        .input-group {
-            position: relative;
-            margin-bottom: 20px;
-        }
-
-        input {
-            width: 100%;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid var(--border);
-            padding: 20px 15px;
-            color: #fff;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 16px;
-            outline: none;
-            transition: 0.3s;
-            box-sizing: border-box;
-            border-radius: 2px;
-        }
-
-        input:focus {
-            border-color: var(--primary);
-            background: rgba(59, 130, 246, 0.05);
-        }
-
-        .scan-line {
-            position: absolute;
-            bottom: 0; left: 0;
-            height: 2px;
-            width: 0%;
-            background: var(--primary);
-            box-shadow: 0 0 10px var(--primary);
-            transition: width 0.3s;
-        }
-
-        input:focus + .scan-line {
-            width: 100%;
-        }
-
-        /* --- BUTON --- */
-        button {
-            background: var(--text-main);
-            color: #000;
-            border: none;
-            padding: 18px;
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        button:hover {
-            background: var(--primary);
-            color: #fff;
-            box-shadow: var(--glow);
-        }
-        
-        button:disabled {
-            background: #333;
-            color: #555;
-            cursor: wait;
-        }
-
-        /* --- SONUÇ ALANI --- */
-        #result-area {
-            margin-top: 30px;
-            border-top: 1px solid var(--border);
-            padding-top: 20px;
-            display: none;
-        }
-
-        .score-display {
-            font-size: 42px;
-            font-weight: bold;
-            font-family: 'Oswald', sans-serif;
-            color: #fff;
-        }
-        
-        .score-label {
-            font-size: 12px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* --- TERMİNAL / LOGLAR --- */
-        .log-header {
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-            font-weight: bold;
-            color: #fff;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        #log-feed {
-            height: 100%;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        
-        .log-item {
-            display: flex;
-            gap: 10px;
-        }
-        .time { opacity: 0.5; }
-        .msg { color: var(--primary); }
-        .err { color: var(--accent); }
-
-        /* --- ANİMASYONLAR --- */
-        @keyframes blink { 50% { opacity: 0.3; } }
-
-        /* Dekoratif Köşeler */
-        .corner {
-            position: absolute;
-            width: 20px; height: 20px;
-            border: 2px solid var(--text-muted);
-            opacity: 0.5;
-            transition: 0.3s;
-        }
-        .tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
-        .br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
-        
-        .interface:hover .corner { border-color: var(--primary); opacity: 1; }
-
-    </style>
+<meta charset="UTF-8" />
+<title>J-Scanner PRO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:#020617;color:#e5e7eb;font-family:'Inter',sans-serif;
+  overflow:hidden;display:flex;justify-content:center;align-items:center
+}
+/* ===== DNA CANVAS BACKGROUND ===== */
+#dna{position:fixed;inset:0;z-index:-2}
+.glow{position:fixed;inset:-20%;z-index:-3;
+  background:radial-gradient(40% 30% at 20% 10%,#22d3ee22,transparent 60%),
+             radial-gradient(40% 30% at 80% 30%,#6366f133,transparent 60%),
+             radial-gradient(30% 30% at 50% 80%,#a855f733,transparent 60%);
+  filter:blur(60px)
+}
+/* ===== CARD ===== */
+.card{
+  width:460px;max-width:92vw;padding:34px;border-radius:26px;
+  background:rgba(2,6,23,.82);
+  box-shadow:0 0 70px rgba(99,102,241,.35), inset 0 0 24px rgba(34,211,238,.12);
+  backdrop-filter:blur(16px);
+  animation:pop .9s ease
+}
+@keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+h1{font-family:'Orbitron',sans-serif;text-align:center;margin:0;letter-spacing:3px}
+.badge{text-align:center;margin-top:6px;font-size:12px;color:#22d3ee;letter-spacing:2px}
+input{
+  width:100%;margin-top:28px;padding:14px 16px;border-radius:16px;
+  border:1px solid #1e293b;background:#020617;color:#e5e7eb;font-size:14px
+}
+button{
+  width:100%;margin-top:18px;padding:14px;border-radius:16px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#6366f1,#22d3ee,#a855f7);background-size:200%;
+  color:#020617;font-weight:800;letter-spacing:.6px;animation:gradient 4s infinite alternate
+}
+@keyframes gradient{0%{background-position:0%}100%{background-position:100%}}
+button:hover{transform:translateY(-1px) scale(1.01)}
+.result{text-align:center;margin-top:26px}
+.score{font-family:'Orbitron',sans-serif;font-size:46px}
+.status{margin-top:6px;font-weight:700}
+.risk{margin-top:14px;height:14px;border-radius:10px;background:#020617;overflow:hidden}
+.fill{height:100%;width:0;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+footer{text-align:center;margin-top:22px;font-size:11px;opacity:.45}
+/* ===== MUSIC TOGGLE ===== */
+.music{
+  position:absolute;right:16px;top:16px;display:flex;gap:8px;align-items:center
+}
+.music button{
+  width:auto;margin:0;padding:8px 12px;border-radius:999px;font-weight:700
+}
+</style>
 </head>
 <body>
+<canvas id="dna"></canvas>
+<div class="glow"></div>
 
-<div class="grid-lines"></div>
-<div class="overlay"></div>
-<canvas id="networkCanvas"></canvas>
-
-<div class="interface">
-    <div class="corner tl"></div>
-    <div class="corner br"></div>
-
-    <div class="left-panel">
-        <div class="sys-status">
-            <div class="blink-dot"></div>
-            <span>SYSTEM ONLINE // READY TO SCAN</span>
-        </div>
-
-        <h1>J-SCANNER</h1>
-        <div style="height: 40px;"></div> <div class="input-group">
-            <input type="text" id="urlInput" placeholder="ENTER TARGET URL..." autocomplete="off">
-            <div class="scan-line"></div>
-        </div>
-
-        <button onclick="startScan()" id="btnMain">
-            <span>INITIALIZE SEQUENCE</span>
-            <span>>>></span>
-        </button>
-
-        <div id="result-area">
-            <div class="score-label">THREAT LEVEL DETECTION</div>
-            <div class="score-display">
-                <span id="decrypt-score">0</span> / <span id="total-engines">0</span>
-            </div>
-            <div id="final-verdict" style="margin-top: 5px; font-size: 14px; letter-spacing: 1px;">WAITING FOR DATA...</div>
-        </div>
-    </div>
-
-    <div class="right-panel">
-        <div class="log-header">
-            <span>LIVE TRAFFIC</span>
-            <span>NET_ID: 8842</span>
-        </div>
-        <div id="log-feed">
-            </div>
-    </div>
+<div class="music">
+  <span style="font-size:12px;opacity:.7">Ambient</span>
+  <button id="musicBtn">PLAY</button>
 </div>
 
+<div class="card">
+  <h1>J-SCANNER</h1>
+  <div class="badge">PRO • DNA INTEL</div>
+
+  <input id="url" placeholder="https://example.com" />
+  <button onclick="scan()">▶ START SCAN</button>
+
+  <div class="result" id="result"></div>
+  <footer>Elite Threat Intelligence</footer>
+</div>
+
+<!-- Ambient music (royalty-free placeholder) -->
+<audio id="bgm" loop preload="none">
+  <source src="https://cdn.pixabay.com/download/audio/2022/10/25/audio_4b2c1f8d6f.mp3?filename=dark-ambient-124734.mp3" type="audio/mpeg">
+</audio>
+
 <script>
-    // --- SES EFEKTLERİ ---
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    function playBeep(freq = 800, type = 'sine', len = 0.05) {
-        if(audioCtx.state === 'suspended') audioCtx.resume();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + len);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + len);
-    }
+// ===== API =====
+const API="https://empty-waterfall-3803.selambenjiji.workers.dev";
+async function scan(){
+  const url=document.getElementById('url').value.trim();
+  const r=document.getElementById('result');
+  if(!/^https?:\/\//i.test(url)){r.innerHTML='<div class="status" style="color:#facc15">Enter valid http(s) URL</div>';return}
+  r.innerHTML='<div>Initializing scan…</div>';
+  const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+  const d=await res.json();
+  const bad=(d.malicious||0)+(d.suspicious||0);
+  const total=bad+(d.harmless||0)+(d.undetected||0);
+  const p=Math.round((bad/Math.max(1,total))*100);
+  const color=bad===0?'#22c55e':bad<3?'#facc15':'#ef4444';
+  r.innerHTML=`<div class="score">${bad}/${total}</div><div class="status" style="color:${color}">${bad===0?'CLEAN':'RISK DETECTED'}</div><div class="risk"><div class="fill" style="width:${p}%;background:${color}"></div></div>`;
+}
 
-    // --- PARÇACIK AĞI (PARTICLE NETWORK) ---
-    const canvas = document.getElementById('networkCanvas');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
+// ===== MUSIC TOGGLE (user interaction required) =====
+const bgm=document.getElementById('bgm');
+const btn=document.getElementById('musicBtn');
+let playing=false;
+btn.onclick=()=>{ if(!playing){ bgm.volume=.35; bgm.play(); btn.textContent='PAUSE'; } else { bgm.pause(); btn.textContent='PLAY'; } playing=!playing; };
 
-    class Particle {
-        constructor() {
-            this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-            this.vx = (Math.random() - 0.5) * 0.5;
-            this.vy = (Math.random() - 0.5) * 0.5;
-            this.size = Math.random() * 2;
-        }
-        update() {
-            this.x += this.vx;
-            this.y += this.vy;
-            if(this.x < 0 || this.x > canvas.width) this.vx *= -1;
-            if(this.y < 0 || this.y > canvas.height) this.vy *= -1;
-        }
-        draw() {
-            ctx.fillStyle = 'rgba(59, 130, 246, 0.5)';
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
-    for(let i=0; i<60; i++) particles.push(new Particle());
-
-    function animateParticles() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for(let i=0; i<particles.length; i++) {
-            particles[i].update();
-            particles[i].draw();
-            for(let j=i; j<particles.length; j++) {
-                const dx = particles[i].x - particles[j].x;
-                const dy = particles[i].y - particles[j].y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                if(dist < 150) {
-                    ctx.strokeStyle = `rgba(59, 130, 246, ${0.1 - dist/1500})`;
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(particles[i].x, particles[i].y);
-                    ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.stroke();
-                }
-            }
-        }
-        requestAnimationFrame(animateParticles);
-    }
-    animateParticles();
-
-    // --- LOG SİSTEMİ ---
-    const logs = document.getElementById('log-feed');
-    const processes = [
-        "Initializing handshake...", "Verifying SSL certificate...", "Checking DNS blacklist...", 
-        "Analyzing header integrity...", "Tracing route hops...", "Ping latency: 12ms", 
-        "Querying threat databases...", "Decrypting payload..."
-    ];
-
-    function addLog(text, isError = false) {
-        const div = document.createElement('div');
-        div.className = 'log-item';
-        const time = new Date().toISOString().split('T')[1].split('.')[0];
-        div.innerHTML = `<span class="time">${time}</span> <span class="${isError ? 'err' : 'msg'}"> > ${text}</span>`;
-        logs.prepend(div);
-        if(logs.children.length > 12) logs.lastChild.remove();
-    }
-
-    // --- SAYI ÇÖZME EFEKTİ (DECRYPT) ---
-    function decryptNumber(element, finalValue, duration = 1000) {
-        let start = Date.now();
-        let timer = setInterval(() => {
-            let timePassed = Date.now() - start;
-            if (timePassed >= duration) {
-                clearInterval(timer);
-                element.innerText = finalValue;
-            } else {
-                element.innerText = Math.floor(Math.random() * 100);
-            }
-        }, 50);
-    }
-
-    // --- TARAMA FONKSİYONU ---
-    const API = "https://empty-waterfall-3803.selambenjiji.workers.dev";
-
-    async function startScan() {
-        const url = document.getElementById('urlInput').value;
-        const btn = document.getElementById('btnMain');
-        const resArea = document.getElementById('result-area');
-        
-        if(!url) {
-            playBeep(200, 'sawtooth');
-            document.getElementById('urlInput').style.borderColor = "#ef4444";
-            setTimeout(() => document.getElementById('urlInput').style.borderColor = "rgba(255,255,255,0.08)", 1000);
-            return;
-        }
-
-        playBeep(600, 'square');
-        btn.disabled = true;
-        btn.innerHTML = "<span>PROCESSING...</span>";
-        resArea.style.display = 'none';
-
-        // Fake Logs Animation
-        let i = 0;
-        let logInt = setInterval(() => {
-            if(i < processes.length) {
-                addLog(processes[i]);
-                playBeep(800 + (i*100), 'sine', 0.03);
-                i++;
-            } else {
-                clearInterval(logInt);
-            }
-        }, 200);
-
-        try {
-            const req = await fetch(API, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url })
-            });
-            const data = await req.json();
-            
-            clearInterval(logInt); // Stop fake logs if API is faster
-            addLog("Data received successfully.");
-
-            // Sonuçları Hazırla
-            const bad = data.malicious + data.suspicious;
-            const total = bad + data.harmless + data.undetected;
-            
-            resArea.style.display = 'block';
-            
-            // Decrypt efektini başlat
-            decryptNumber(document.getElementById('decrypt-score'), bad);
-            document.getElementById('total-engines').innerText = total;
-
-            const verdict = document.getElementById('final-verdict');
-            if(bad === 0) {
-                verdict.innerText = "STATUS: CLEAN // NO THREATS FOUND";
-                verdict.style.color = "#22c55e"; // Yeşil
-                addLog("Target marked safe.");
-                playBeep(1200, 'sine', 0.2); // Başarılı sesi
-            } else {
-                verdict.innerText = "STATUS: DANGER // THREATS DETECTED";
-                verdict.style.color = "#ef4444"; // Kırmızı
-                addLog(`ALERT: ${bad} malicious engines detected!`, true);
-                playBeep(150, 'sawtooth', 0.4); // Hata sesi
-            }
-
-        } catch (e) {
-            addLog("Connection failed.", true);
-            playBeep(100, 'sawtooth', 0.5);
-        }
-
-        btn.disabled = false;
-        btn.innerHTML = "<span>INITIALIZE SEQUENCE</span><span>>>></span>";
-    }
-
-    // Input Enter Tuşu
-    document.getElementById('urlInput').addEventListener('keypress', (e) => {
-        if(e.key === 'Enter') startScan();
-    });
-
+// ===== DNA CANVAS =====
+const c=document.getElementById('dna');
+const ctx=c.getContext('2d');
+let w,h,t=0;
+function resize(){w=c.width=window.innerWidth;h=c.height=window.innerHeight}
+window.addEventListener('resize',resize);resize();
+function draw(){
+  ctx.clearRect(0,0,w,h);
+  const cx=w/2; const amp=Math.min(w,h)*0.18; const step=10;
+  for(let y=0;y<h;y+=step){
+    const a=(y*0.02)+t;
+    const x1=cx+Math.sin(a)*amp;
+    const x2=cx+Math.sin(a+Math.PI)*amp;
+    const g=ctx.createLinearGradient(x1,y,x2,y);
+    g.addColorStop(0,'rgba(34,211,238,.7)'); g.addColorStop(1,'rgba(168,85,247,.7)');
+    ctx.strokeStyle=g; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x1,y); ctx.lineTo(x2,y); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.7)'; ctx.beginPath(); ctx.arc(x1,y,2.2,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(x2,y,2.2,0,Math.PI*2); ctx.fill();
+  }
+  t+=0.02; requestAnimationFrame(draw);
+}
+draw();
 </script>
-
 </body>
 </html>
-
