@@ -2,68 +2,105 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>J-Scanner</title>
+  <title>J-Scanner | URL Threat Analysis</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
-      background: #0b0f1a;
-      color: #fff;
-      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      height: 100vh;
+      background: radial-gradient(circle at top, #111827, #020617);
+      color: #e5e7eb;
+      font-family: 'Inter', sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
     }
-    .box {
-      background: #12182b;
-      padding: 30px;
-      border-radius: 16px;
-      width: 380px;
-      box-shadow: 0 0 30px rgba(0,0,0,.6);
+    .card {
+      width: 420px;
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 22px;
+      padding: 32px;
+      box-shadow: 0 0 40px rgba(0,0,0,.8);
     }
     h1 {
+      font-family: 'Orbitron', sans-serif;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 13px;
+      opacity: .7;
+      margin-bottom: 24px;
     }
     input {
       width: 100%;
-      padding: 12px;
-      border-radius: 10px;
+      padding: 14px;
+      border-radius: 14px;
       border: none;
       outline: none;
-      margin-bottom: 15px;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 14px;
     }
     button {
+      margin-top: 16px;
       width: 100%;
-      padding: 12px;
-      background: #4f7cff;
+      padding: 14px;
+      border-radius: 14px;
       border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      color: white;
+      background: linear-gradient(135deg, #6366f1, #22d3ee);
+      color: #020617;
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
     }
     button:hover {
-      background: #3b66e0;
+      opacity: .9;
     }
     .result {
-      margin-top: 20px;
+      margin-top: 28px;
       text-align: center;
     }
     .score {
-      font-size: 28px;
+      font-size: 42px;
+      font-family: 'Orbitron', sans-serif;
+      margin-bottom: 6px;
+    }
+    .bar {
+      height: 12px;
+      background: #020617;
+      border-radius: 8px;
+      overflow: hidden;
       margin-top: 10px;
+    }
+    .fill {
+      height: 100%;
+      width: 0;
+      transition: width .6s ease;
+    }
+    footer {
+      margin-top: 26px;
+      text-align: center;
+      font-size: 11px;
+      opacity: .4;
     }
   </style>
 </head>
 <body>
 
-<div class="box">
-  <h1>J-Scanner</h1>
+<div class="card">
+  <h1>J‑Scanner</h1>
+  <div class="subtitle">Advanced URL Threat Scanner</div>
+
   <input id="url" placeholder="https://example.com" />
-  <button onclick="scan()">SCAN</button>
+  <button onclick="scan()">SCAN URL</button>
 
   <div class="result" id="result"></div>
+
+  <footer>J‑Scanner • Security Research Tool</footer>
 </div>
 
 <script>
@@ -73,7 +110,7 @@ async function scan() {
   const url = document.getElementById("url").value;
   const result = document.getElementById("result");
 
-  result.innerHTML = "Scanning...";
+  result.innerHTML = "<div>Scanning...</div>";
 
   const res = await fetch(API, {
     method: "POST",
@@ -85,10 +122,16 @@ async function scan() {
 
   const bad = data.malicious + data.suspicious;
   const total = bad + data.harmless + data.undetected;
+  const percent = Math.round((bad / total) * 100);
+
+  const color = bad === 0 ? "#22c55e" : bad < 3 ? "#facc15" : "#ef4444";
 
   result.innerHTML = `
     <div class="score">${bad} / ${total}</div>
-    <div>${bad === 0 ? "✅ Clean" : "⚠️ Risky URL"}</div>
+    <div>${bad === 0 ? "✅ Clean" : "⚠️ Risk Detected"}</div>
+    <div class="bar">
+      <div class="fill" style="width:${percent}%; background:${color}"></div>
+    </div>
   `;
 }
 </script>
